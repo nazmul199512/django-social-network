@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    home
+{% endblock  %}
+
+{% block content %}
+    <div class="row text-center">
+    <div class="col">
+         <h3>ShareMe</h3>
+    </div>
+    </div>
+
+    <div class="row mb-3">
+         <div class="col-md-4 mx-auto col-10">
+             <form class="form" method="POST" id="post-create-form" action="/post-create/">
+                 {% csrf_token %}
+                 <div class="d-none alert alert-danger" id="post-create-form-error">
+
+                 </div>
+                <input type="hidden" value="/" name="next"/>
+                 <textarea required="" class="form-control" name="content" placeholder="Write Your Post ..." ></textarea>
+                 <button  type="submit" class="btn btn-primary">Share</button>
+             </form>
+         </div>
+    </div>
+
+
+    <div class="row" id="posts">
+     Loading ...
+
+    </div>
+
+     <script>
+
+     function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
+     function handlePostFormError(msg, display) {
+         var myErrorDiv = document.getElementById('d-block post-create-form-error')
+          if (display === true){
+              myErrorDiv.setAttribute('class', 'alert alert-danger')
+              myErrorDiv.innerText = msg
+          }else {
+               myErrorDiv.setAttribute('class', 'd-none alert alert-danger')
+          }
+     }
+
+     function handlePostFormSubmit(event) {
+          event.preventDefault()
+          const myForm = event.target
+          const myFormData = new FormData(myForm)
+          const url = myForm.getAttribute("action")
+          const responseType = 'json'
+          const method = myForm.getAttribute("method")
+          const xhr = new XMLHttpRequest()
+          xhr.open(method, url)
+          xhr.setRequestHeader("HTTP_X_REQUESTED_WITH","XMLHttpRequest")
+          xhr.setRequestHeader("X-Requested-With","XMLHttpRequest")
+          xhr.onload = function () {
+             if(xhr.status === 201){
+                  const newPostJson = xhr.response
+                  //const newPostJson = JSON.parse(newPost)
+                  console.log(newPostJson.likes)
+                  const newPostElement = formatPostElement(newPostJson)
+
+                  const ogHtml = postsContainerElement.innerHTML
+                  postsContainerElement.innerHTML = newPostElement + ogHtml
+                  myForm.reset()
+
+             } else if(xhr.status === 400){
+                 const errorJson = xhr.response
+
+                 const contentError = errorJson.content
+                 let contentErrorMsg;
+                 if(contentError){
+                     contentErrorMsg = contentError[0]
+                     if(contentErrorMsg){
+                         handlePostFormError(contentErrorMsg, true)
+                     }else {
+                          alert("An error occurred ! please try again later ")
+                     }
+                 }else {
+                     alert("An error occurred ! please try again later ")
+                 }
+
+
+             }
+             else if(xhr.status === 401){
+                alert("You must login!")
+                 window.location.href = "/login"
+             }
+             else if(xhr.status === 403){
+                alert("You must login!")
+                 window.location.href = "/login"
+             }
+             else if(xhr.status === 500){
+               alert("There was an server error! Please try again later")
+             }
+          }
+          xhr.onerror = function (){
+              alert("An error occurred! Please try again later")
+          }
+          xhr.send(myFormData)
+     }
+
+     const postCreateFormEl = document.getElementById('post-create-form')
+     postCreateFormEl.addEventListener("submit", handlePostFormSubmit )
+
+     const postsContainerElement = document.getElementById('posts')
+
+     function loadPosts(postsElement) {
+         const xhr = new XMLHttpRequest()
+         const method = 'GET'
+         const url = '/post-list'
+         const responseType = 'json'
+         xhr.responseType = responseType
+         xhr.open(method, url)
+         xhr.onload = function () {
+             const serverResponse = xhr.response
+             const listedItems = serverResponse
+             var finalPostStr = ""
+             var i;
+             for(i=0;i<listedItems.length;i++){
+                  var postObj = listedItems[i]
+                  var currentItem = formatPostElement(postObj)
+                  finalPostStr += currentItem
+             }
+                  postsElement.innerHTML = finalPostStr
+                 //console.log(listedItems[i])
+         }
+         xhr.send()
+     }
+     loadPosts(postsContainerElement)
+
+
+
+
+
+
+     
+     function handlePostAction(post_id, currentCount, action) {
+          console.log(post_id, currentCount)
+          const url = "/api/post-details/action"
+          const method = "POST"
+          const data =JSON.stringify({
+              id: post_id,
+              action: action
+         })
+          const xhr = new XMLHttpRequest()
+          const csrftoken = getCookie('csrftoken');
+          xhr.open(method, url)
+          xhr.setRequestHeader("Content-type", "application/json")
+          xhr.setRequestHeader("HTTP_X_REQUESTED_WITH","XMLHttpRequest")
+          xhr.setRequestHeader("X-Requested-With","XMLHttpRequest")
+          xhr.setRequestHeader("X-CSRFToken", csrftoken)
+          xhr.onload = function () {
+              loadPosts(postsContainerElement)
+          }
+           xhr.send(data)
+          return
+     }
+     function rePostBtn(post) {
+         return "<button class= 'btn btn-outline-success btn-sm'" +
+             " onclick=handlePostAction("+ post.id + "," + post.likes + ",'re-post')> RePost </button>"
+     }
+
+
+     function unlikeBtn(post) {
+         return "<button class= 'btn btn-outline-primary btn-sm'" +
+             " onclick=handlePostAction("+ post.id + "," + post.likes + ",'unlike')> UnLike </button>"
+     }
+
+
+
+     function likeBtn(post) {
+         return "<button class= 'btn btn-primary btn-sm'" +
+             " onclick=handlePostAction("+ post.id + "," + post.likes + ",'like')>"+ post.likes + " Likes </button>"
+     }
+
+     function formatPostElement(post){
+
+         var formatted_post = "<div class='col-12 col-md-10 mx-auto border rounded py-3  mb-4 post'> <h1>"+post.id +"</h1>" +
+             "<p>"+post.content +"</p> <div class='btn-group'>"
+             +likeBtn(post)+
+             unlikeBtn(post)+
+             rePostBtn(post)+
+
+             "</div> </div>"
+
+         return formatted_post
+
+     }
+
+
+
+     </script>
+{% endblock %}
