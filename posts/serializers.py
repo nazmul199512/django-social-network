@@ -37,10 +37,11 @@ class PostCreateSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField(read_only=True)
     content = serializers.SerializerMethodField(read_only=True)
+    parent = PostCreateSerializer( read_only=True)
 
     class Meta:
         model = Post
-        fields = ['id', 'content', 'likes', 'is_repost']
+        fields = ['id', 'content', 'likes', 'is_repost', 'parent']
 
     def get_likes(self, obj):
         return obj.likes.count()

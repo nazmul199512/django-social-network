@@ -27,7 +27,7 @@
 
 
     <div class="row" id="posts">
-     Loading ...
+
 
     </div>
 
@@ -126,7 +126,7 @@
      function loadPosts(postsElement) {
          const xhr = new XMLHttpRequest()
          const method = 'GET'
-         const url = '/post-list'
+         const url = 'api/posts'
          const responseType = 'json'
          xhr.responseType = responseType
          xhr.open(method, url)
@@ -152,10 +152,10 @@
 
 
 
-     
+
      function handlePostAction(post_id, currentCount, action) {
           console.log(post_id, currentCount)
-          const url = "/api/post-details/action"
+          const url = "/api/posts/action"
           const method = "POST"
           const data =JSON.stringify({
               id: post_id,
