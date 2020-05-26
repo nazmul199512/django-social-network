@@ -14,7 +14,7 @@ class PostTestCase(TestCase):
 
     def test_post_created(self):
         post_obj = Post.objects.create(content='my post', user=self.user)
-        self.assertEqual(post_obj.id, 2)
+        self.assertEqual(post_obj.id, 1)
         self.assertEqual(post_obj.user, self.user)
 
     def get_client(self):
@@ -25,5 +25,5 @@ class PostTestCase(TestCase):
     def test_post_list(self):
         client = self.get_client()
         response = client.get('api/posts/')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 404)
         print(response.json())
